@@ -3,13 +3,14 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-[System.Serializable]
+[Serializable]
 public class Player {
     public Image panel;
     public Text text;
+    public Button button;
 }
 
-[System.Serializable]
+[Serializable]
 public class PlayerColor {
     public Color panelColor;
     public Color textColor;
@@ -25,16 +26,16 @@ public class GameController : MonoBehaviour
     public Player playerO;
     public PlayerColor activePlayerColor;
     public PlayerColor inactivePlayerColor;
+    public GameObject startInfo;
 
     private string[] _playerSides = { "X", "O" };
     private string _playerSide;
     private int _moveCount;
 
     private void Awake() {
+        _moveCount = 0;
         SetGameControllerReferenceOnButtons();
         gameOverPanel.SetActive(false);
-        _playerSide = _playerSides[0];
-        _moveCount = 0;
         ToggleRestartButton(false);
     }
 
@@ -44,13 +45,25 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public string GetPlayerSide() { return _playerSide; }
+    public void SetStartingSides(string startingSide) {
+        _playerSide = startingSide;
 
-    public void ChangeSides() {
-        _playerSide = (_playerSide == _playerSides[0])
-                        ? _playerSides[1]
-                        : _playerSides[0];
+        if (_playerSide == _playerSides[0]) {
+            SetPlayerColors(playerX, playerO);
+        } else {
+            SetPlayerColors(playerO, playerX);
+        }
+
+        StartGame();
     }
+
+    private void StartGame() {
+        SetBoardInteractable(true);
+        SetPlayerButtons(false);
+        startInfo.SetActive(false);
+    }    
+
+    public string GetPlayerSide() { return _playerSide; }
 
     public void EndTurn() {
 
@@ -60,47 +73,66 @@ public class GameController : MonoBehaviour
         if(buttonList[0].text == _playerSide && buttonList[1].text == _playerSide && buttonList[2].text == _playerSide) {
             GameOver(_playerSide);
         }
-        if (buttonList[3].text == _playerSide && buttonList[4].text == _playerSide && buttonList[5].text == _playerSide) {
+        else if (buttonList[3].text == _playerSide && buttonList[4].text == _playerSide && buttonList[5].text == _playerSide) {
             GameOver(_playerSide);
         }
-        if (buttonList[6].text == _playerSide && buttonList[7].text == _playerSide && buttonList[8].text == _playerSide) {
+        else if (buttonList[6].text == _playerSide && buttonList[7].text == _playerSide && buttonList[8].text == _playerSide) {
             GameOver(_playerSide);
         }
         // Rows check ends
 
         // Diagonals Check
-        if (buttonList[0].text == _playerSide && buttonList[4].text == _playerSide && buttonList[8].text == _playerSide) {
+        else if (buttonList[0].text == _playerSide && buttonList[4].text == _playerSide && buttonList[8].text == _playerSide) {
             GameOver(_playerSide);
         }
-        if (buttonList[2].text == _playerSide && buttonList[4].text == _playerSide && buttonList[6].text == _playerSide) {
+        else if (buttonList[2].text == _playerSide && buttonList[4].text == _playerSide && buttonList[6].text == _playerSide) {
             GameOver(_playerSide);
         }
         // Diagonals Check ends
 
         // Columns Check
-        if (buttonList[0].text == _playerSide && buttonList[3].text == _playerSide && buttonList[6].text == _playerSide) {
+        else if (buttonList[0].text == _playerSide && buttonList[3].text == _playerSide && buttonList[6].text == _playerSide) {
             GameOver(_playerSide);
         }
-        if (buttonList[1].text == _playerSide && buttonList[4].text == _playerSide && buttonList[7].text == _playerSide) {
+        else if (buttonList[1].text == _playerSide && buttonList[4].text == _playerSide && buttonList[7].text == _playerSide) {
             GameOver(_playerSide);
         }
-        if (buttonList[2].text == _playerSide && buttonList[5].text == _playerSide && buttonList[8].text == _playerSide) {
+        else if (buttonList[2].text == _playerSide && buttonList[5].text == _playerSide && buttonList[8].text == _playerSide) {
             GameOver(_playerSide);
         }
         // Columns Check ends
 
-        if(_moveCount >= 9) {
+        else if(_moveCount >= 9) {
             GameOver("draw");
+        } else {
+            ChangeSides();
         }
+    }
 
-        ChangeSides();
+    public void ChangeSides() {
+        _playerSide = (_playerSide == _playerSides[0]) ? _playerSides[1] : _playerSides[0];
+
+        if (_playerSide == _playerSides[0]) {
+            SetPlayerColors(playerX, playerO);
+        } else {
+            SetPlayerColors(playerO, playerX);
+        }
+    }
+
+    public void SetPlayerColors(Player newPlayer, Player oldPlayer) {
+        newPlayer.panel.color = activePlayerColor.panelColor;
+        newPlayer.text.color = activePlayerColor.textColor;
+
+        oldPlayer.panel.color = inactivePlayerColor.panelColor;
+        oldPlayer.text.color = inactivePlayerColor.textColor;
     }
 
     private void GameOver(string winningPlayer) {
-        SetBoardInteractable(false);        
+        SetBoardInteractable(false);
 
-        if(winningPlayer == "draw") {
+        if (winningPlayer == "draw") {
             SetGameOverText("It's a draw!!");
+            SetPlayerColorsInactive();
         } else {
             SetGameOverText(winningPlayer + " Wins!!!");
         }
@@ -111,7 +143,19 @@ public class GameController : MonoBehaviour
     private void SetGameOverText(string value) {
         gameOverPanel.SetActive(true);
         gameOverText.text = value;
+    }
+
+    public void RestartGame() {
+        _moveCount = 0;
+        gameOverPanel.SetActive(false);
+        startInfo.SetActive(true);
+        SetPlayerButtons(true);
+        SetPlayerColorsInactive();
         ToggleRestartButton(true);
+
+        for (int i = 0; i < buttonList.Length; i++) {
+            buttonList[i].text = "";
+        }
     }
 
     private void SetBoardInteractable(bool toggle) {
@@ -120,17 +164,17 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public void RestartGame() {
-        _playerSide = _playerSides[0];
-        _moveCount = 0;
-        gameOverPanel.SetActive(false);
-        SetBoardInteractable(true);
+    private void SetPlayerButtons(bool toggle) {
+        playerX.button.interactable = toggle;
+        playerO.button.interactable = toggle;
+    }
 
-        for (int i = 0; i < buttonList.Length; i++) {            
-            buttonList[i].text = "";
-        }
+    private void SetPlayerColorsInactive() {
+        playerX.panel.color = inactivePlayerColor.panelColor;
+        playerX.text.color = inactivePlayerColor.textColor;
 
-        ToggleRestartButton(false);
+        playerO.panel.color = inactivePlayerColor.panelColor;
+        playerO.text.color = inactivePlayerColor.textColor;
     }
 
     private void ToggleRestartButton(bool toggle) {
